@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gantt Chart Template</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    background: #f0f2f5; min-height: 100vh; padding: 2rem;
+  }
+  .page {
+    background: #fff; border-radius: 16px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+    padding: 2rem 2.5rem 2.5rem; max-width: 1200px; margin: 0 auto;
+  }
+  .header {
+    display: flex; align-items: flex-start;
+    justify-content: space-between; margin-bottom: 1.2rem; gap: 1rem;
+  }
+  .header-left { flex: 1; }
+  #proj-title {
+    font-size: 20px; font-weight: 700; color: #111;
+    border: none; outline: none; width: 100%; background: transparent; line-height: 1.3;
+  }
+  #proj-title:focus { border-bottom: 2px solid #185FA5; }
+  .header-meta { display: flex; gap: 1rem; margin-top: 0.4rem; flex-wrap: wrap; }
+  .meta-field { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #888; }
+  .meta-field input {
+    border: none; outline: none; font-size: 12px;
+    color: #555; background: transparent; width: 90px;
+  }
+  .meta-field input:focus { border-bottom: 1px solid #185FA5; }
+
+  .controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    padding: 7px 14px; border-radius: 8px; font-size: 12px;
+    font-family: inherit; cursor: pointer;
+    border: 1px solid #d1d5db; background: #fff; color: #374151; transition: background 0.15s;
+  }
+  .btn:hover { background: #f3f4f6; }
+  .btn-primary { background: #185FA5; color: #fff; border-color: #185FA5; }
+  .btn-primary:hover { background: #0c447c; }
+  .btn-danger { color: #dc2626; border-color: #fca5a5; }
+  .btn-danger:hover { background: #fef2f2; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  .legend-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 0.8rem; flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #444;
+    padding: 3px 8px 3px 4px; border-radius: 20px;
+    border: 1px solid transparent;
+  }
+  .legend-dot { width: 14px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .legend-add {
+    font-size: 11px; color: #185FA5; cursor: pointer;
+    padding: 3px 10px; border-radius: 20px;
+    border: 1px dashed #93c5fd; background: transparent; font-family: inherit;
+  }
+  .legend-add:hover { background: #eff6ff; }
+
+  .hint { font-size: 11px; color: #aaa; margin-bottom: 0.6rem; }
+
+  .gantt-wrap { display: flex; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; }
+  .task-col { flex-shrink: 0; width: 220px; border-right: 1px solid #e5e7eb; }
+  .task-col-header {
+    height: 32px; background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 11px; font-weight: 600; color: #185FA5;
+  }
+  .task-row {
+    height: 36px; display: flex; align-items: center;
+    padding: 0 6px 0 8px; border-bottom: 1px solid #f1f3f5;
+  }
+  .task-row:nth-child(odd)  { background: #f9fafb; }
+  .task-row:nth-child(even) { background: #fff; }
+  .task-name {
+    font-size: 11px; color: #333; flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    cursor: text; padding: 2px 4px; border-radius: 4px;
+    outline: none; border: 1px solid transparent; background: transparent; font-family: inherit;
+  }
+  .task-name:hover { border-color: #d1d5db; background: #fff; }
+  .task-name:focus { border-color: #185FA5; background: #fff; box-shadow: 0 0 0 2px #dbeafe; white-space: normal; overflow: visible; }
+  .task-del {
+    opacity: 0; cursor: pointer; font-size: 15px; color: #dc2626;
+    padding: 0 3px; line-height: 1; flex-shrink: 0;
+    transition: opacity 0.15s; background: none; border: none; font-family: inherit;
+  }
+  .task-row:hover .task-del { opacity: 1; }
+  .chart-area { flex: 1; overflow-x: auto; }
+  #gantt-svg { display: block; }
+
+  /* Modals */
+  .modal-bg {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.35); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: #fff; border-radius: 14px; padding: 1.5rem;
+    width: 380px; max-width: 95vw; box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+  }
+  .modal h3 { font-size: 15px; font-weight: 600; margin-bottom: 1rem; color: #111; }
+  .form-row { margin-bottom: 0.85rem; }
+  .form-row label { display: block; font-size: 12px; color: #666; margin-bottom: 4px; }
+  .form-row input, .form-row select {
+    width: 100%; padding: 7px 10px; border: 1px solid #d1d5db;
+    border-radius: 7px; font-size: 13px; font-family: inherit; outline: none;
+  }
+  .form-row input:focus, .form-row select:focus { border-color: #185FA5; }
+  .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.2rem; }
+
+  /* Category manager */
+  .cat-list { margin-bottom: 1rem; display: flex; flex-direction: column; gap: 6px; max-height: 280px; overflow-y: auto; }
+  .cat-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa;
+  }
+  .cat-color-swatch {
+    width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
+    border: 1px solid #d1d5db; cursor: pointer; transition: transform 0.1s;
+  }
+  .cat-color-swatch:hover { transform: scale(1.15); }
+  .cat-name-inp {
+    flex: 1; border: none; outline: none; font-size: 12px;
+    background: transparent; font-family: inherit; color: #333;
+  }
+  .cat-name-inp:focus { border-bottom: 1px solid #185FA5; }
+  .cat-del-btn {
+    background: none; border: none; cursor: pointer;
+    color: #dc2626; font-size: 16px; line-height: 1; padding: 0 2px;
+    opacity: 0.3; transition: opacity 0.15s;
+  }
+  .cat-item:hover .cat-del-btn { opacity: 1; }
+  .cat-add-row { display: flex; gap: 8px; align-items: center; }
+  .cat-add-row input {
+    flex: 1; padding: 6px 10px; border: 1px dashed #93c5fd;
+    border-radius: 7px; font-size: 12px; font-family: inherit; outline: none;
+  }
+  .cat-add-row input:focus { border-color: #185FA5; border-style: solid; }
+
+  /* Color palette */
+  .color-palette {
+    position: absolute; background: #fff;
+    border: 1px solid #d1d5db; border-radius: 8px; padding: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.14); z-index: 300;
+    display: none; flex-wrap: wrap; gap: 5px; width: 158px;
+  }
+  .color-palette.open { display: flex; }
+  .cp-dot {
+    width: 22px; height: 22px; border-radius: 5px; cursor: pointer;
+    border: 2px solid transparent; transition: border-color 0.1s, transform 0.1s;
+  }
+  .cp-dot:hover { border-color: #111; transform: scale(1.1); }
+
+  @media print {
+    @page { margin: 1cm; size: landscape; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { background: #fff; padding: 0; }
+    .page { box-shadow: none; border-radius: 0; padding: 0.5rem; max-width: 100%; }
+    .controls, .modal-bg, .task-del, .hint, .legend-add, .legend-bar { display: none !important; }
+    input, .task-name {
+      border: none !important; outline: none !important;
+      background: transparent !important; padding: 0 !important; box-shadow: none !important;
+    }
+    .gantt-wrap { display: none !important; }
+
+    #print-svg-wrap { display: block !important; width: 100%; }
+    #print-svg-wrap svg { width: 100%; }
+  }
+  #print-svg-wrap { display: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-left">
+      <input id="proj-title" type="text" value="Project Name" placeholder="Project Name"/>
+      <div class="header-meta">
+        <div class="meta-field">Start: <input id="meta-start" type="text" value="2024/06" placeholder="YYYY/MM"/></div>
+        <div class="meta-field">End:   <input id="meta-end"   type="text" value="2024/10" placeholder="YYYY/MM"/></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="btn btn-primary" onclick="addTask()">+ Add Task</button>
+      <button class="btn" onclick="openCatModal()">⚙ Categories</button>
+      <button class="btn" onclick="printChart()">🖨 Print</button>
+    </div>
+  </div>
+
+  <div class="legend-bar" id="legend-bar"></div>
+  <p class="hint">📝 Click task name to rename &nbsp;·&nbsp; Hover over a task and click × to delete &nbsp;·&nbsp; Click ⚙ Categories to add/remove categories &nbsp;·&nbsp; Click + Add Task to create a new task</p>
+
+  <div class="gantt-wrap">
+    <div class="task-col">
+      <div class="task-col-header">Task</div>
+      <div id="task-list"></div>
+    </div>
+    <div class="chart-area">
+      <svg id="gantt-svg"></svg>
+    </div>
+  </div>
+  <div id="print-svg-wrap"></div>
+</div>
+
+<!-- Edit task modal -->
+<div class="modal-bg" id="modal-task" onclick="bgClose(event,'modal-task')">
+  <div class="modal">
+    <h3 id="modal-task-title">Edit Task</h3>
+    <div class="form-row"><label>Task Name</label><input id="f-name" type="text" placeholder="Task name"/></div>
+    <div class="form-row"><label>Start Date</label><input id="f-start" type="date"/></div>
+    <div class="form-row"><label>End Date</label><input id="f-end" type="date"/></div>
+    <div class="form-row"><label>Category</label><select id="f-cat"></select></div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeModal('modal-task')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTaskModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category manager modal -->
+<div class="modal-bg" id="modal-cat" onclick="bgClose(event,'modal-cat')">
+  <div class="modal" style="width:420px">
+    <h3>Manage Categories</h3>
+    <div class="cat-list" id="cat-list"></div>
+    <div class="cat-add-row">
+      <input id="new-cat-name" type="text" placeholder="New category name…" onkeydown="if(event.key==='Enter') addCat()"/>
+      <button class="btn btn-primary btn-sm" onclick="addCat()">+ Add</button>
+    </div>
+    <div class="form-actions"><button class="btn" onclick="closeModal('modal-cat')">Done</button></div>
+  </div>
+</div>
+
+<!-- Color palette popup -->
+<div class="color-palette" id="color-palette"></div>
+
+<script>
+const PALETTE = [
+  {fill:'#9FE1CB',stroke:'#0F6E56',text:'#085041'},
+  {fill:'#FAC775',stroke:'#854F0B',text:'#633806'},
+  {fill:'#CECBF6',stroke:'#534AB7',text:'#26215C'},
+  {fill:'#B5D4F4',stroke:'#185FA5',text:'#042C53'},
+  {fill:'#F0997B',stroke:'#993C1D',text:'#4A1B0C'},
+  {fill:'#ED93B1',stroke:'#993556',text:'#4B1528'},
+  {fill:'#97C459',stroke:'#3B6D11',text:'#173404'},
+  {fill:'#F7C1C1',stroke:'#A32D2D',text:'#501313'},
+  {fill:'#D3D1C7',stroke:'#5F5E5A',text:'#2C2C2A'},
+  {fill:'#FAD09F',stroke:'#B07010',text:'#6B4200'},
+  {fill:'#A8E6CF',stroke:'#1D7A5F',text:'#0A3D2F'},
+  {fill:'#D4E8FA',stroke:'#2F80C0',text:'#0C3A6E'},
+  {fill:'#FFD6E0',stroke:'#C0506A',text:'#6B1F30'},
+  {fill:'#C3F0FA',stroke:'#1A8FA0',text:'#074550'},
+];
+
+let cats = [
+  {id:1, label:'category1', ...PALETTE[0]},
+];
+let nextCatId = 2;
+
+let tasks = [
+  {id:1, name:'task1', start:'2024-06-27', end:'2025-12-31', cat:1},
+];
+let nextTaskId = 2;
+let editingTaskId = null;
+let colorPickerTarget = null;
+
+const toDate = s => new Date(s);
+const diffDays = (a,b) => Math.round((toDate(b)-toDate(a))/864e5);
+const fmtLabel = s => { const d=new Date(s); return (d.getMonth()+1)+'/'+(d.getDate()); };
+const monthName = m => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m];
+const getCat = id => cats.find(c=>c.id===id) || cats[0];
+
+function getBounds(){
+  const dates = tasks.flatMap(t=>[toDate(t.start),toDate(t.end)]);
+  let min = new Date(Math.min(...dates));
+  let max = new Date(Math.max(...dates));
+  min = new Date(min.getFullYear(), min.getMonth(), 1);
+  max = new Date(max.getFullYear(), max.getMonth()+1, 0);
+  return {min, max, totalDays: diffDays(min.toISOString().slice(0,10), max.toISOString().slice(0,10))+1};
+}
+
+function svgEl(tag, attrs, text){
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+  if(text !== undefined) el.textContent = text;
+  return el;
+}
+
+function renderLegend(){
+  const bar = document.getElementById('legend-bar');
+  bar.innerHTML = '';
+  cats.forEach(cat => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const dot = document.createElement('div');
+    dot.className = 'legend-dot';
+    dot.style.background = cat.fill;
+    dot.style.border = `1px solid ${cat.stroke}`;
+    const label = document.createElement('span');
+    label.textContent = cat.label;
+    item.appendChild(dot);
+    item.appendChild(label);
+    bar.appendChild(item);
+  });
+}
+
+function renderTaskList(){
+  const list = document.getElementById('task-list');
+  list.innerHTML = '';
+  tasks.forEach(task => {
+    const row = document.createElement('div');
+    row.className = 'task-row';
+    const inp = document.createElement('input');
+    inp.className = 'task-name';
+    inp.type = 'text';
+    inp.value = task.name;
+    inp.addEventListener('blur', () => {
+      const t = tasks.find(x=>x.id===task.id);
+      if(t){ t.name = inp.value.trim() || t.name; inp.value = t.name; }
+      renderChart();
+    });
+    inp.addEventListener('keydown', e => { if(e.key==='Enter') inp.blur(); });
+    const del = document.createElement('button');
+    del.className = 'task-del';
+    del.textContent = '×';
+    del.onclick = () => { tasks = tasks.filter(t=>t.id!==task.id); render(); };
+    row.appendChild(inp);
+    row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function renderChart(){
+  const svg = document.getElementById('gantt-svg');
+  svg.innerHTML = '';
+  if(!tasks.length){
+    svg.setAttribute('viewBox','0 0 500 60'); svg.setAttribute('width','500'); svg.style.minWidth='500px';
+    svg.appendChild(svgEl('text',{x:250,y:36,'font-size':'13',fill:'#bbb','text-anchor':'middle','font-family':'inherit'},'No tasks. Click "+ Add Task" to begin.'));
+    return;
+  }
+  const TOP=32, ROW=36, BAR_H=22;
+  const {min,max,totalDays} = getBounds();
+  const CHART_W = Math.max(totalDays*5, 500);
+  const scale = CHART_W/totalDays;
+  const H = TOP + tasks.length*ROW + 10;
+  svg.setAttribute('viewBox',`0 0 ${CHART_W} ${H}`);
+  svg.setAttribute('width',`${CHART_W}`);
+  svg.style.minWidth=`${CHART_W}px`;
+
+  svg.appendChild(svgEl('rect',{x:0,y:0,width:CHART_W,height:TOP,fill:'#f8fafc'}));
+  svg.appendChild(svgEl('line',{x1:0,y1:TOP,x2:CHART_W,y2:TOP,stroke:'#e5e7eb','stroke-width':'0.8'}));
+
+  // Collect month stops first, then render with clipping
+  const monthStops2 = [];
+  let cur = new Date(min);
+  while(cur<=max){
+    const x = diffDays(min.toISOString().slice(0,10), cur.toISOString().slice(0,10))*scale;
+    monthStops2.push({ x, label: monthName(cur.getMonth()) + ' ' + cur.getFullYear() });
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+  const defs2 = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  monthStops2.forEach((m, idx) => {
+    const nextX = idx + 1 < monthStops2.length ? monthStops2[idx+1].x : CHART_W;
+    const colW = nextX - m.x;
+    const clipId = `mc2clip${idx}`;
+    const cp = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+    cp.setAttribute('id', clipId);
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x', m.x + 5); r.setAttribute('y', 0);
+    r.setAttribute('width', Math.max(colW - 8, 0)); r.setAttribute('height', TOP);
+    cp.appendChild(r); defs2.appendChild(cp);
+  });
+  svg.appendChild(defs2);
+  monthStops2.forEach((m, idx) => {
+    svg.appendChild(svgEl('text',{x:m.x+5,y:18,'font-size':'11','font-weight':'600',fill:'#185FA5','font-family':'inherit','clip-path':`url(#mc2clip${idx})`}, m.label));
+    svg.appendChild(svgEl('line',{x1:m.x,y1:0,x2:m.x,y2:H,stroke:'#e5e7eb','stroke-width':'0.8'}));
+  });
+  svg.appendChild(svgEl('line',{x1:CHART_W,y1:0,x2:CHART_W,y2:H,stroke:'#e5e7eb','stroke-width':'0.8'}));
+
+  tasks.forEach((task,i) => {
+    const y = TOP+i*ROW, barY = y+(ROW-BAR_H)/2;
+    if(i%2===0) svg.appendChild(svgEl('rect',{x:0,y,width:CHART_W,height:ROW,fill:'#f9fafb'}));
+    svg.appendChild(svgEl('line',{x1:0,y1:y+ROW,x2:CHART_W,y2:y+ROW,stroke:'#f1f3f5','stroke-width':'0.6'}));
+    const bx = diffDays(min.toISOString().slice(0,10), task.start)*scale;
+    const bw = Math.max((diffDays(task.start,task.end)+1)*scale, 8);
+    const cat = getCat(task.cat);
+    const g = svgEl('g',{style:'cursor:pointer'});
+    g.appendChild(svgEl('rect',{x:bx,y:barY,width:bw,height:BAR_H,rx:'5',fill:cat.fill,stroke:cat.stroke,'stroke-width':'0.7'}));
+    if(bw>38) g.appendChild(svgEl('text',{x:bx+bw/2,y:barY+BAR_H/2,'font-size':'9',fill:cat.text,'text-anchor':'middle','font-family':'inherit','dominant-baseline':'central','font-weight':'600'}, fmtLabel(task.start)+'–'+fmtLabel(task.end)));
+    g.addEventListener('click', () => openTaskModal(task.id));
+    svg.appendChild(g);
+  });
+  svg.appendChild(svgEl('line',{x1:0,y1:H-1,x2:CHART_W,y2:H-1,stroke:'#d1d5db','stroke-width':'0.8'}));
+}
+
+function render(){ renderTaskList(); renderChart(); renderLegend(); }
+
+function addTask(){
+  const today = new Date().toISOString().slice(0,10);
+  const end = new Date(Date.now()+14*864e5).toISOString().slice(0,10);
+  const newId = nextTaskId++;
+  tasks.push({id:newId, name:'New Task', start:today, end, cat:cats[0]?.id||1});
+  render();
+  openTaskModal(newId);
+}
+
+function openTaskModal(id){
+  editingTaskId = id;
+  const t = tasks.find(x=>x.id===id);
+  document.getElementById('modal-task-title').textContent = 'Edit: ' + t.name;
+  document.getElementById('f-name').value = t.name;
+  document.getElementById('f-start').value = t.start;
+  document.getElementById('f-end').value   = t.end;
+  const sel = document.getElementById('f-cat');
+  sel.innerHTML = cats.map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+  sel.value = t.cat;
+  document.getElementById('modal-task').classList.add('open');
+}
+function saveTaskModal(){
+  const name=document.getElementById('f-name').value.trim();
+  const start=document.getElementById('f-start').value, end=document.getElementById('f-end').value, cat=parseInt(document.getElementById('f-cat').value);
+  if(!name){alert('Please enter a task name.');return;}
+  if(!start||!end){alert('Please fill in both dates.');return;}
+  if(start>end){alert('Start must be before end.');return;}
+  Object.assign(tasks.find(x=>x.id===editingTaskId),{name,start,end,cat});
+  closeModal('modal-task'); render();
+}
+
+function openCatModal(){
+  renderCatList();
+  document.getElementById('modal-cat').classList.add('open');
+}
+function renderCatList(){
+  const list = document.getElementById('cat-list');
+  list.innerHTML = '';
+  cats.forEach(cat => {
+    const row = document.createElement('div');
+    row.className = 'cat-item';
+    const swatch = document.createElement('div');
+    swatch.className = 'cat-color-swatch';
+    swatch.style.background = cat.fill;
+    swatch.title = 'Click to change color';
+    swatch.onclick = e => { e.stopPropagation(); openColorPicker(e, cat.id); };
+    const inp = document.createElement('input');
+    inp.className = 'cat-name-inp';
+    inp.value = cat.label;
+    inp.placeholder = 'Category name';
+    inp.addEventListener('blur', () => { cat.label = inp.value.trim()||cat.label; inp.value=cat.label; render(); });
+    inp.addEventListener('keydown', e => { if(e.key==='Enter') inp.blur(); });
+    const del = document.createElement('button');
+    del.className = 'cat-del-btn';
+    del.textContent = '×';
+    del.title = 'Delete category';
+    del.onclick = () => deleteCat(cat.id);
+    row.appendChild(swatch); row.appendChild(inp); row.appendChild(del);
+    list.appendChild(row);
+  });
+}
+
+function addCat(){
+  const inp = document.getElementById('new-cat-name');
+  const name = inp.value.trim();
+  if(!name) return;
+  cats.push({id:nextCatId++, label:name, ...PALETTE[cats.length % PALETTE.length]});
+  inp.value = '';
+  renderCatList(); render();
+}
+
+function deleteCat(id){
+  if(cats.length<=1){alert('You must keep at least one category.');return;}
+  const cat = cats.find(c=>c.id===id);
+  const inUse = tasks.some(t=>t.cat===id);
+  const fallback = cats.find(c=>c.id!==id);
+  if(inUse && !confirm(`Tasks in "${cat.label}" will be reassigned to "${fallback.label}". Continue?`)) return;
+  tasks.forEach(t=>{ if(t.cat===id) t.cat=fallback.id; });
+  cats = cats.filter(c=>c.id!==id);
+  renderCatList(); render();
+}
+
+function openColorPicker(e, catId){
+  colorPickerTarget = catId;
+  const pal = document.getElementById('color-palette');
+  pal.innerHTML = '';
+  PALETTE.forEach(p => {
+    const dot = document.createElement('div');
+    dot.className = 'cp-dot';
+    dot.style.background = p.fill;
+    dot.style.borderColor = p.stroke;
+    dot.onclick = ev => {
+      ev.stopPropagation();
+      const cat = cats.find(c=>c.id===colorPickerTarget);
+      if(cat) Object.assign(cat, p);
+      pal.classList.remove('open');
+      renderCatList(); render();
+    };
+    pal.appendChild(dot);
+  });
+  const rect = e.target.getBoundingClientRect();
+  pal.style.top  = (rect.bottom + window.scrollY + 4)+'px';
+  pal.style.left = (rect.left + window.scrollX)+'px';
+  pal.style.position = 'absolute';
+  pal.classList.add('open');
+}
+document.addEventListener('click', () => document.getElementById('color-palette').classList.remove('open'));
+
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function bgClose(e, id){ if(e.target===document.getElementById(id)) closeModal(id); }
+
+function buildPrintSVG(){
+  const wrap = document.getElementById('print-svg-wrap');
+  wrap.innerHTML = '';
+  if(!tasks.length) return;
+
+  const LABEL_W = 220, TOP = 32, ROW = 36, BAR_H = 22;
+  const LEG_ROW_H = 22;
+  const CHAR_W = 6.5; // approximate px per char at font-size 11
+  const DOT_W = 16, DOT_GAP = 6, ITEM_PAD = 18; // swatch + gap + right padding
+  // Measure each item's width
+  const itemWidths = cats.map(c => DOT_W + DOT_GAP + c.label.length * CHAR_W + ITEM_PAD);
+  // Flow items into rows
+  const LEG_ROWS_ARR = [[]]; // array of rows, each row = array of {cat, width}
+  let rowX = 0;
+  cats.forEach((cat, i) => {
+    const iw = itemWidths[i];
+    if(rowX + iw > 1100 && LEG_ROWS_ARR[LEG_ROWS_ARR.length-1].length > 0){
+      LEG_ROWS_ARR.push([]); rowX = 0;
+    }
+    LEG_ROWS_ARR[LEG_ROWS_ARR.length-1].push({cat, width: iw});
+    rowX += iw;
+  });
+  const LEG_H = LEG_ROWS_ARR.length * LEG_ROW_H + 10;
+  const {min, max, totalDays} = getBounds();
+  const TOTAL_W = 1100;
+  const CHART_W = TOTAL_W - LABEL_W;
+  const scale = CHART_W / totalDays;
+  const CHART_H = TOP + tasks.length * ROW + 10;
+  const TOTAL_H = LEG_H + CHART_H;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox', `0 0 ${TOTAL_W} ${TOTAL_H}`);
+  svg.setAttribute('width', '100%');
+  svg.style.fontFamily = "'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif";
+
+  const mk = (tag, attrs, text) => {
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for(const [k,v] of Object.entries(attrs)) el.setAttribute(k,v);
+    if(text !== undefined) el.textContent = text;
+    return el;
+  };
+
+  // ── Legend strip (same SVG, y=0..LEG_H) ──
+  LEG_ROWS_ARR.forEach((row, ri) => {
+    let lx = 0;
+    const ly = 8 + ri * LEG_ROW_H;
+    row.forEach(({cat, width}) => {
+      svg.appendChild(mk('rect', {x:lx, y:ly, width:16, height:12, rx:'3', fill:cat.fill, stroke:cat.stroke, 'stroke-width':'0.7'}));
+      svg.appendChild(mk('text', {x:lx+22, y:ly+6, 'font-size':'11', fill:'#444', 'dominant-baseline':'central'}, cat.label));
+      lx += width;
+    });
+  });
+
+  // ── Chart (offset by LEG_H) ──
+  const OY = LEG_H;
+  const CHART_BOTTOM = TOTAL_H;
+
+  // Header bg
+  svg.appendChild(mk('rect',{x:0,y:OY,width:TOTAL_W,height:TOP,fill:'#f8fafc'}));
+  svg.appendChild(mk('line',{x1:0,y1:OY+TOP,x2:TOTAL_W,y2:OY+TOP,stroke:'#e5e7eb','stroke-width':'0.8'}));
+  svg.appendChild(mk('text',{x:8,y:OY+18,'font-size':'11','font-weight':'600',fill:'#185FA5'},'Task'));
+
+  // Month headers & vertical grid
+  // First pass: collect all month x positions
+  const monthStops = [];
+  let cur = new Date(min);
+  while(cur <= max){
+    const dayOff = diffDays(min.toISOString().slice(0,10), cur.toISOString().slice(0,10));
+    monthStops.push({ x: LABEL_W + dayOff * scale, label: monthName(cur.getMonth()) + ' ' + cur.getFullYear() });
+    cur = new Date(cur.getFullYear(), cur.getMonth()+1, 1);
+  }
+  // Second pass: render with clipping based on next month's x
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  monthStops.forEach((m, idx) => {
+    const nextX = idx + 1 < monthStops.length ? monthStops[idx+1].x : TOTAL_W;
+    const colW = nextX - m.x;
+    const clipId = `mclip${idx}`;
+    const cp = document.createElementNS('http://www.w3.org/2000/svg','clipPath');
+    cp.setAttribute('id', clipId);
+    const r = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    r.setAttribute('x', m.x + 4); r.setAttribute('y', OY);
+    r.setAttribute('width', Math.max(colW - 6, 0)); r.setAttribute('height', TOP);
+    cp.appendChild(r); defs.appendChild(cp);
+  });
+  svg.appendChild(defs);
+  monthStops.forEach((m, idx) => {
+    svg.appendChild(mk('line',{x1:m.x,y1:OY,x2:m.x,y2:CHART_BOTTOM,stroke:'#e5e7eb','stroke-width':'0.8'}));
+    svg.appendChild(mk('text',{x:m.x+4,y:OY+18,'font-size':'10','font-weight':'600',fill:'#185FA5','clip-path':`url(#mclip${idx})`}, m.label));
+  });
+  svg.appendChild(mk('line',{x1:TOTAL_W,y1:OY,x2:TOTAL_W,y2:CHART_BOTTOM,stroke:'#e5e7eb','stroke-width':'0.8'}));
+  svg.appendChild(mk('line',{x1:LABEL_W,y1:OY,x2:LABEL_W,y2:CHART_BOTTOM,stroke:'#e5e7eb','stroke-width':'1'}));
+
+  // Task rows
+  tasks.forEach((task,i) => {
+    const y = OY + TOP + i * ROW;
+    const barY = y + (ROW - BAR_H) / 2;
+    if(i%2===0) svg.appendChild(mk('rect',{x:0,y,width:TOTAL_W,height:ROW,fill:'#f9fafb'}));
+    svg.appendChild(mk('line',{x1:0,y1:y+ROW,x2:TOTAL_W,y2:y+ROW,stroke:'#f1f3f5','stroke-width':'0.6'}));
+
+    svg.appendChild(mk('text',{
+      x:8, y:y+ROW/2, 'font-size':'11', fill:'#333', 'dominant-baseline':'central'
+    }, task.name.length>28 ? task.name.slice(0,27)+'…' : task.name));
+
+    const bx = LABEL_W + diffDays(min.toISOString().slice(0,10), task.start) * scale;
+    const bw = Math.max((diffDays(task.start, task.end)+1) * scale, 6);
+    const cat = getCat(task.cat);
+    svg.appendChild(mk('rect',{x:bx,y:barY,width:bw,height:BAR_H,rx:'4',fill:cat.fill,stroke:cat.stroke,'stroke-width':'0.7'}));
+    if(bw>36){
+      svg.appendChild(mk('text',{
+        x:bx+bw/2, y:barY+BAR_H/2,
+        'font-size':'8.5', fill:cat.text, 'text-anchor':'middle',
+        'dominant-baseline':'central', 'font-weight':'600'
+      }, fmtLabel(task.start)+'–'+fmtLabel(task.end)));
+    }
+  });
+  svg.appendChild(mk('line',{x1:0,y1:TOTAL_H-1,x2:TOTAL_W,y2:TOTAL_H-1,stroke:'#d1d5db','stroke-width':'0.8'}));
+  wrap.appendChild(svg);
+}
+
+function printChart(){
+  buildPrintSVG();
+  window.print();
+}
+
+render();
+</script>
+</body>
+</html>
