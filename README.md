@@ -1,123 +1,144 @@
-# Gantt Chart Template / 甘特图模板
+# 项目管理甘特图模板
 
-[English](#english) | [中文](#中文)
+一个**零依赖的单文件甘特图**：不需要构建、不需要服务器、不联网。
 
----
-
-## English
-
-A lightweight, interactive Gantt chart built in a single HTML file — no dependencies, no installation required.
-
-### Features
-
-- **Zero setup** — open `gantt_template.html` in any modern browser and start editing
-- **Fully editable inline** — rename tasks, adjust dates, and manage categories without leaving the page
-- **Color-coded categories** — assign tasks to categories with customizable colors
-- **Print-ready** — exports a clean SVG-based layout optimized for landscape printing
-- **Single file** — everything (HTML, CSS, JS) is self-contained in one file
-
-### Usage
-
-1. Download `gantt_template.html`
-2. Open it in your browser (Chrome, Firefox, Safari, Edge)
-3. Start building your chart:
-
-| Action | How |
-|---|---|
-| Rename project | Click the project title at the top |
-| Edit start/end period | Click the Start / End fields in the header |
-| Add a task | Click **+ Add Task** |
-| Rename a task | Click directly on the task name |
-| Delete a task | Hover over the task row → click **×** |
-| Manage categories | Click **⚙ Categories** to add, rename, or remove |
-| Change category color | Open **⚙ Categories** → click the color swatch |
-| Print / Export | Click **🖨 Print** |
-
-### Customization
-
-To change the default task and category, edit the following section near the bottom of the `<script>` block:
-
-```js
-let cats = [
-  {id:1, label:'category1', ...PALETTE[0]},
-];
-
-let tasks = [
-  {id:1, name:'task1', start:'2024-06-27', end:'2025-12-31', cat:1},
-];
-```
-
-Dates follow the `YYYY-MM-DD` format. Additional palette colors are defined in the `PALETTE` array at the top of the script.
-
-### Requirements
-
-- Any modern browser (no server needed)
-- No npm, no build step, no frameworks
-
-### License
-
-This project is licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
-You are free to use, modify, and distribute this project, including for commercial purposes, as long as you include the original copyright notice and a copy of the license. You must also clearly state any changes you made to the original.
-
-[↑ 切换到中文](#中文)
+适用于排项目计划、跟踪进度、梳理任务依赖，也可以直接另存成自己的项目文件反复使用。
 
 ---
 
-## 中文
+## 快速开始
 
-一个轻量、可交互的甘特图，单个 HTML 文件即可运行，无需任何依赖或安装。
-
-### 功能特点
-
-- **零配置** — 用浏览器直接打开 `gantt_template.html` 即可开始使用
-- **页面内直接编辑** — 重命名任务、调整日期、管理分类，无需跳转任何页面
-- **颜色分类** — 为任务分配分类，支持自定义颜色
-- **打印友好** — 导出干净的 SVG 布局，针对横向打印优化
-- **单文件** — HTML、CSS、JS 全部内嵌在一个文件中
-
-### 使用方式
-
-1. 下载 `gantt_template.html`
-2. 用浏览器打开（Chrome、Firefox、Safari、Edge 均可）
-3. 开始编辑：
-
-| 操作 | 方式 |
-|---|---|
-| 重命名项目 | 点击顶部项目标题 |
-| 修改起止时间 | 点击头部的 Start / End 字段 |
-| 新增任务 | 点击 **+ Add Task** |
-| 重命名任务 | 直接点击任务名称 |
-| 删除任务 | 悬停任务行 → 点击 **×** |
-| 管理分类 | 点击 **⚙ Categories** 进行新增、重命名或删除 |
-| 修改分类颜色 | 打开 **⚙ Categories** → 点击色块 |
-| 打印 / 导出 | 点击 **🖨 Print** |
-
-### 自定义默认数据
-
-在文件底部的 `<script>` 中修改以下内容：
-
-```js
-let cats = [
-  {id:1, label:'category1', ...PALETTE[0]},
-];
-
-let tasks = [
-  {id:1, name:'task1', start:'2024-06-27', end:'2025-12-31', cat:1},
-];
+```bash
+# 直接用浏览器打开
+start index.html      # Windows
+open  index.html      # macOS
 ```
 
-日期格式为 `YYYY-MM-DD`。更多颜色可在脚本顶部的 `PALETTE` 数组中定义。
+打开后是一份示例项目（需求调研 → 原型设计 → 开发 → 联调 → 上线），可以直接在上面改，或点「清空」从零开始。
 
-### 环境要求
+---
 
-- 任意现代浏览器（无需服务器）
-- 无需 npm、无需构建、无需框架
+## 界面结构
 
-### 许可证
+```
+┌─────────────────────────────────────────────────────────┐
+│ 项目名称（可编辑）          周期 …，共 N 天，M 个任务    │
+│ [＋添加任务][分类管理][历史][日|周|月|适应][今天][导出]…   │  ← 工具栏
+├─────────────────────────────────────────────────────────┤
+│ ○ 全部  ○ 需求 3  ○ 开发 2  ○ 测试 1                     │  ← 分类图例（点击筛选）
+├──────────────┬──────────────────────────────────────────┤
+│ 任务         │  10月        11月        12月     ▲今天   │  ← 表头（纵向滚动时钉住）
+│ ● 需求调研   │      ▓▓▓▓▓▓                               │
+│ ● 原型设计   │           ▓▓▓▓▓▓▓▓                        │  ← 色条区
+│ ● 后端开发   │              ▓▓▓▓▓▓▓▓                     │
+└──────────────┴──────────────────────────────────────────┘
+  拖拽双击可编辑任务，数据仅保存在本浏览器请及时导出备份   © 2026 Longtao Huang.
+```
 
-本项目采用 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 许可证。
+左列任务名横向滚动时钉在左侧，表头纵向滚动时钉在顶部，左右行高由同一个 CSS Grid 行统一，永远不会错位。
 
-您可以自由使用、修改和分发本项目（包括商业用途），但须保留原始版权声明和许可证副本，并注明对原始内容所做的修改。
+---
 
-[↑ Back to English](#english)
+## 功能
+
+### 任务
+- **添加**：「＋ 添加任务」，默认从今天起 14 天，新建后自动打开编辑弹窗。
+- **编辑**：双击图表任意位置，或单击左列任务名直接改名。弹窗里可改名称、起止日期、分类、完成进度、前置任务。
+- **拖拽**：
+  - 拖色条中段 → 整体平移（保持工期）
+  - 拖色条两端 → 改开始日 / 结束日
+  - 拖进度圆点 → 改完成度（`0 < 进度 < 100` 且色条够宽时出现）
+- **删除**：左列 hover 出现「×」，或编辑弹窗左下角「删除任务」。
+
+### 进度与依赖
+- **进度**：色条内嵌深色填充 + 右侧百分比，可拖拽，也可在弹窗用滑杆（步进 5）设置。
+- **依赖（FS：前置完成 → 后继开始）**：弹窗里勾选前置任务，图上画出肘形箭头。
+  - 会形成循环依赖的选项自动置灰不可选；
+  - 后继任务开始早于前置结束时，箭头变红、左列日期标红，保存时提示冲突；
+  - 删除任务会自动清理别人对它的依赖。
+- 注意：箭头是**标记与告警**，不会自动顺延后继任务日期。
+
+### 分类与筛选
+- 「分类管理」里可增删改名、换色（14 色板平铺，不用浮层）。
+- 图例 chip 带任务数，点击筛选；再点一次取消；「全部」恢复。
+- 删除分类时，其下的任务会转移到其他分类（会先确认）。
+
+### 时间轴
+| 档位 | 刻度 | 说明 |
+|---|---|---|
+| 日 | 日刻度 + 周末底纹 | 每天 ≥ 28px，项目长时横向滚动 |
+| 周 | 周刻度 | 每天 ≥ 12px |
+| 月 | 仅月份 | 每天 ≥ 4px |
+| 适应 | 按密度自动选 | 铺满可视宽度 |
+
+四个档位都保证**轨道宽度 ≥ 可视宽度**，所以右侧不会出现空白；项目很短时四档宽度一致、只有刻度粗细不同。
+另有常驻红色**今日线**，「今天」按钮会横向滚动并居中定位到今天。
+
+### 历史与备份
+- **历史**：每次改动**前**自动存一份快照（最多 30 条，相同状态自动去重），列表第一条就是「上一次改动前的状态」，点「恢复」即撤销一步；可手动打点、可清空历史。
+- **导出 / 导入**：JSON 文件，文件名 `甘特图项目.json`。
+- **清空**：清掉全部任务与分类，执行前先存快照，可撤销。
+- **打印**：A4 横向，复用同一套渲染（临时切到适应宽度），打印完自动恢复。
+
+---
+
+## 数据存在哪
+
+全部在**浏览器 localStorage**，不上传任何服务器：
+
+| 键名 | 内容 |
+|---|---|
+| `hlt-gantt-project` | 当前项目（任何改动自动写入） |
+| `hlt-gantt-history` | 历史快照（最多 30 条） |
+
+因此：同一浏览器关掉再打开还在；**换设备、换浏览器、清除站点数据就会丢**。重要节点请用「导出」存成 JSON。
+
+### 导出文件格式
+
+```json
+{
+  "version": 2,
+  "title": "项目名称",
+  "cats": [
+    { "id": 1, "label": "需求", "fill": "#9FE1CB", "stroke": "#5FBF9F", "text": "#0F5132" }
+  ],
+  "tasks": [
+    {
+      "id": 1,
+      "name": "需求调研",
+      "start": "2026-10-05",
+      "end": "2026-10-16",
+      "cat": 1,
+      "progress": 100,
+      "deps": []
+    }
+  ],
+  "nextCatId": 4,
+  "nextTaskId": 7
+}
+```
+
+字段说明：日期为 `YYYY-MM-DD`；`progress` 为 0–100；`deps` 为前置任务 `id` 数组；`cat` 指向 `cats[].id`。
+导入时会校验结构，缺 `progress` / `deps` 的老数据会自动补默认值，失效的依赖 id 会被剔除。
+
+---
+
+## 实现要点
+
+- **单一数据源** `state = { title, cats, tasks, nextCatId, nextTaskId }` + **单一渲染入口** `render()`，没有第二条渲染路径（打印也是同一个函数换参数）。
+- 左右两列是同一个 CSS Grid 行的两个 cell，行高 `--row-h: 36px` 统一，从结构上杜绝「筛选后左右错位」。
+- 网格线、周末底纹、依赖箭头各用一层绝对定位 SVG 绘制，不逐行重复。
+- 缩放不变量：`pxFor(days) = max(档位下限, 可视宽度 / days)`，轨道宽度恒 ≥ 可视宽度。
+- 依赖环检测：从候选前置出发沿 `deps` 回溯，能回到自身即成环。
+- 常量集中在顶部：`LABEL_W=220`、`ROW_H=36`、`HEAD_H=48`、`PRINT_W=1040`、`HISTORY_MAX=30`。
+
+---
+
+## 限制
+
+- 只支持 FS（完成→开始）一种依赖类型，且不会自动顺延日期。
+- 单文件、无账号体系，多设备同步需靠导入导出。
+- 快照与项目共用 localStorage，空间紧张时快照会自动降级保留 8 条。
+- 项目很短时「日 / 周 / 月 / 适应」四档宽度相同（必须铺满与固定缩放不可兼得）。
+
+---
